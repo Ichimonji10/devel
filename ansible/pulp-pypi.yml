@@ -1,0 +1,17 @@
+---
+# Install Pulp 3 from PyPI.
+#
+# The resultant installation is designed to be useful for end users. It doesn't
+# do things like install code in editable mode, install extra dependencies or
+# install Bash aliases.
+- hosts: pulp3_dev
+  become: true
+  roles:
+    - pulp-user
+    - db
+    - broker
+    - lazy
+    - dev
+    - plugins
+    - reset_db
+    - systemd
