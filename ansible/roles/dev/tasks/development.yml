@@ -1,0 +1,64 @@
+- name: Check for pulp git repo
+  include_role:
+    name: common
+    tasks_from: require_repo
+  vars:
+    repo: pulp
+
+- name: Disable sshd strict modes
+  lineinfile:
+      backrefs: yes
+      dest: /etc/ssh/sshd_config
+      regexp: "^#StrictModes yes"
+      line: "StrictModes no"
+  notify: Restart sshd
+
+- name: Install python-virtualenvwrapper
+  package:
+    name: python-virtualenvwrapper
+    state: latest
+
+- block:
+
+  - name: Install developer extra-requirements
+    pip:
+      requirements: "{{ pulp_devel_dir }}/pulp/{{ item }}"
+      virtualenv: "{{ pulp_venv }}"
+      virtualenv_command: /usr/bin/python3 -m venv
+    with_items:
+      - test_requirements.txt
+      - dev_requirements.txt
+      - docs/requirements.txt
+
+  - name: Install Pulp Platform packages
+    pip:
+      name: "{{ pulp_devel_dir }}/pulp/{{ item }}"
+      extra_args: "-e"
+      virtualenv: "{{ pulp_venv }}"
+      virtualenv_command: /usr/bin/python3 -m venv
+    with_items:
+      - common
+      - platform
+      - plugin
+
+  - name: Enable autoenv Directory Switching for pulp
+    lineinfile:
+      dest: "{{ pulp_venv }}/.project"
+      line: "{{ pulp_devel_dir }}/pulp"
+      create: true
+      regexp: ".*"
+
+  - name: Add Django supplemental bashrc
+    copy:
+      src: files/django.bashrc
+      dest: "{{ pulp_user_home }}/.bashrc.d/django.bashrc"
+
+  - name: Add virtualenv supplemental bashrc
+    copy:
+      src: files/venv.bashrc
+      dest: "{{ pulp_user_home }}/.bashrc.d/venv.bashrc"
+    when:
+      - pulp_venv is defined
+      - pulp_install_strategy == 'development'
+
+  become_user: '{{ pulp_user }}'

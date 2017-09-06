@@ -1,95 +1,4 @@
-- name: check for pulp git repo
-  include_role:
-    name: common
-    tasks_from: require_repo
-  vars:
-    repo: pulp
-
-- name: Disable selinux
-  selinux: state=disabled
-
-- name: Disable sshd strict modes
-  lineinfile:
-      backrefs: yes
-      dest: /etc/ssh/sshd_config
-      regexp: "^#StrictModes yes"
-      line: "StrictModes no"
-  notify: restart sshd
-
-- name: Install python-virtualenvwrapper
-  package: name=python-virtualenvwrapper state=latest
-  when: pulp_venv is defined
-
-- block:
-
-  - name: Install developer extra-requirements
-    pip:
-      requirements: "{{ pulp_devel_dir }}/pulp/{{ item }}"
-      virtualenv: "{{ pulp_venv }}"
-      virtualenv_command: /usr/bin/python3 -m venv
-    with_items:
-      - test_requirements.txt
-      - dev_requirements.txt
-      - docs/requirements.txt
-    when: pulp_install_strategy == 'development'
-
-  - name: Install Pulp Platform packages
-    pip:
-      name: "{{ pulp_devel_dir }}/pulp/{{ item }}"
-      extra_args: "-e"
-      virtualenv: "{{ pulp_venv }}"
-      virtualenv_command: /usr/bin/python3 -m venv
-    with_items:
-        - common
-        - platform
-        - plugin
-
-  - name: Enable autoenv Directory Switching for pulp
-    lineinfile:
-      dest: "{{ pulp_venv }}/.project"
-      line: "{{ pulp_devel_dir }}/pulp"
-      create: true
-      regexp: ".*"
-    when: pulp_venv is defined
-
-  - name: Add Django supplemental bashrc
-    copy:
-      src: files/django.bashrc
-      dest: "{{ pulp_user_home }}/.bashrc.d/django.bashrc"
-    when: pulp_install_strategy == 'development'
-
-  - name: Add virtualenv supplemental bashrc
-    copy:
-      src: files/venv.bashrc
-      dest: "{{ pulp_user_home }}/.bashrc.d/venv.bashrc"
-    when:
-      - pulp_venv is defined
-      - pulp_install_strategy == 'development'
-
-  become_user: '{{ pulp_user }}'
-
-- name: Create /etc/pulp directory
-  file:
-    path: /etc/pulp
-    state: directory
-
-- name: Install server.yaml Config file
-  copy:
-    remote_src: true
-    src: "{{pulp_devel_dir}}/pulp/platform/pulpcore/etc/pulp/server.yaml"
-    dest: "/etc/pulp/server.yaml"
-
-- name: Generate random secret for Django
-  shell: cat /dev/urandom | tr -dc 'a-z0-9!@#$%^&*(\-_=+)' | head -c 50
-  register: random_secret
-
-- name: Add development server configuration in server.yaml
-  blockinfile:
-    path: "/etc/pulp/server.yaml"
-    block: |
-      # Pulp Development Configuration
-      DEBUG: True
-      SECRET_KEY: {{ random_secret.stdout | to_nice_yaml }}
+- include: '{{ pulp_install_strategy }}.yml'
 
 - name: Create /var/lib/pulp directory
   file:
@@ -106,3 +15,49 @@
     owner: apache
     group: apache
     mode: 0755
+
+- name: Create /etc/pulp
+  file:
+    path: /etc/pulp
+    state: directory
+
+- name: Find server.yaml
+  find:
+    paths: '{{ pulp_devel_dir if pulp_install_strategy == "development" else pulp_venv }}'
+    recurse: true
+    patterns: 'server.yaml'
+  register: result
+
+- name: Assert one server.yaml file has been found
+  assert:
+    that: 'result["files"] | length == 1'
+
+- name: Install /etc/pulp/server.yaml
+  copy:
+    src: '{{ result["files"][0]["path"] }}'
+    remote_src: true
+    dest: /etc/pulp/server.yaml
+    # This file is about to be customized, and it's also especially likely to be
+    # customized by a user. The down-side of doing this is that this
+    # configuration file can become out of sync with sources.
+    force: false
+
+- name: Generate random secret for server.yaml
+  shell: tr -dc 'a-z0-9!@#$%^&*(\-_=+)' < /dev/urandom | head -c 50
+  changed_when: false
+  check_mode: false
+  register: result
+
+# TODO: Conditionally execute this task.
+- name: Add SECRET_KEY to server.yaml
+  lineinfile:
+    path: /etc/pulp/server.yaml
+    regexp: '^SECRET_KEY: '
+    line: "SECRET_KEY: '{{ result.stdout }}'"
+
+- name: Enable DEBUG mode in server.yaml
+  lineinfile:
+    path: /etc/pulp/server.yaml
+    regexp: '^DEBUG: '
+    line: 'DEBUG: True'
+    state: '{{ "present" if pulp_install_strategy == "development" else "absent" }}'

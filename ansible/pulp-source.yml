@@ -8,6 +8,11 @@
   become: true
   vars:
     pulp_install_strategy: source
+  pre_tasks:
+    # Pulp 3 isn't currently compatible with SELinux.
+    - name: Disable selinux
+      selinux:
+        state: disabled
   roles:
     - pulp-user
     - db

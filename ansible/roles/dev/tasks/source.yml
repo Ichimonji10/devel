@@ -1,0 +1,6 @@
+- name: Install pulpcore
+  pip:
+    name: git+https://github.com/pulp/pulp.git@3.0-dev#egg=pulpcore&subdirectory=platform
+    virtualenv: "{{ pulp_venv }}"
+    virtualenv_command: /usr/bin/python3 -m venv
+  become_user: "{{ pulp_user }}"

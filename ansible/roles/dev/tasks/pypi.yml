@@ -1,0 +1,6 @@
+- name: Install pulpcore
+  pip:
+    name: pulpcore
+    virtualenv: "{{ pulp_venv }}"
+    virtualenv_command: /usr/bin/python3 -m venv
+  become_user: "{{ pulp_user }}"
