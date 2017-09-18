@@ -1,0 +1,7 @@
+- name: Find manage.py (development)
+  find:
+    paths: '{{ pulp_devel_dir }}/pulp/platform/pulpcore/app/'
+    patterns: 'manage.py'
+    recurse: true
+  become_user: '{{ pulp_user }}'
+  register: result

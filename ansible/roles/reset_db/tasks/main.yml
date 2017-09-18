@@ -1,2 +1,22 @@
-- name: Reset and Migrate Pulp DB
-  command: "{{ pulp_devel_dir }}/pulp/platform/pulpcore/app/db-reset.sh {{ pulp_venv }}"
+- include: '{{ pulp_install_strategy }}.yml'
+
+- name: Assert manage.py was found
+  assert:
+    that: 'result["matched"] == 1'
+
+- name: Make manage.py executable
+  file:
+    dest: '{{ result["files"][0]["path"] }}'
+    mode: a+x
+
+- name: Run Django migrations
+  django_manage:
+    command: '{{ item }}'
+    app_path: '{{ result["files"][0]["path"]| dirname}}'
+    virtualenv: '{{ pulp_venv }}'
+  with_items:
+    - 'makemigrations pulp_app'
+    - 'migrate --noinput auth'
+    - 'migrate --noinput'
+    - 'reset-admin-password --password admin'
+  become_user: '{{ pulp_user }}'

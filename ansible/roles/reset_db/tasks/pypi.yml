@@ -1,0 +1,7 @@
+- name: Find manage.py (pypi)
+  find:
+    paths: '{{ pulp_venv }}'
+    patterns: 'manage.py'
+    recurse: true
+  become_user: '{{ pulp_user }}'
+  register: result
