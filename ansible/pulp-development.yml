@@ -1,5 +1,5 @@
 ---
-# Install Pulp 3 from source.
+# Install Pulp 3 with the "development" install strategy.
 #
 # The resultant installation is designed to be useful for developers. It does
 # things like install code in editable mode, install extra dependencies and
