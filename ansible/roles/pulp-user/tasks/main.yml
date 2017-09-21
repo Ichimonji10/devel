@@ -95,6 +95,12 @@
 
 - block:
 
+  - name: Create ~/devel
+    file:
+      path: '{{ pulp_devel_dir }}'
+      state: directory
+    become_user: '{{ pulp_user }}'
+
   - name: Create ~/.bashrc.d/
     file:
       path: "{{ pulp_user_home }}/.bashrc.d/"

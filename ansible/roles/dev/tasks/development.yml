@@ -1,9 +1,9 @@
-- name: Check for pulp git repo
-  include_role:
-    name: common
-    tasks_from: require_repo
-  vars:
-    repo: pulp
+- name: Clone Pulp repository
+  git:
+    dest: '{{ pulp_devel_dir }}/pulp'
+    repo: https://github.com/pulp/pulp.git
+    version: '3.0-dev'
+  become_user: '{{ pulp_user }}'
 
 - name: Disable sshd strict modes
   lineinfile:
