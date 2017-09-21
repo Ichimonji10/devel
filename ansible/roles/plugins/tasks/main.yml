@@ -10,4 +10,4 @@
   when: "{{ [item] | issubset(pulp_available_plugins) }}"
   with_items:
       - pulp_file
-  become: false
+  become_user: '{{ pulp_user }}'

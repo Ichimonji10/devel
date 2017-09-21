@@ -16,4 +16,4 @@
 - name: Install pulpproject.org gems
   bundler:
       gemfile: "{{ pulp_devel_dir }}/pulpproject.org/Gemfile"
-  become: false
+  become_user: '{{ pulp_user }}'

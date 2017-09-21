@@ -40,4 +40,4 @@
       src: files/smash.bashrc
       dest: "{{ pulp_user_home }}/.bashrc.d/smash.bashrc"
     when: supplement_bashrc
-  become: false
+  become_user: '{{ pulp_user }}'

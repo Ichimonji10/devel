@@ -62,7 +62,7 @@
       src: files/venv.bashrc
       dest: "{{ pulp_user_home }}/.bashrc.d/venv.bashrc"
     when: pulp_venv is defined and supplement_bashrc
-  become: false
+  become_user: '{{ pulp_user }}'
 
 - name: Create /etc/pulp directory
   file:
