@@ -1,0 +1,9 @@
+[pypi]
+fedora-26-pulp-3-pypi
+fedora-27-pulp-3-pypi
+rhel-7-pulp-3-pypi
+
+[source]
+fedora-26-pulp-3-source
+fedora-27-pulp-3-source
+rhel-7-pulp-3-source
